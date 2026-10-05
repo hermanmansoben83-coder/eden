@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jemaat Eden Mansoben | GKI di Tanah Papua - Klasis Supiori Utara</title>
+  <meta name="description" content="Website Resmi Jemaat Eden Mansoben, GKI di Tanah Papua, Klasis Supiori Utara. Sistem informasi jemaat, khotbah, jadwal ibadah, dan media pelayanan.">
+  <meta name="keywords" content="GKI Eden Mansoben, GKI Tanah Papua, Klasis Supiori Utara, Jemaat Eden Mansoben, Gereja Papua, Eden Mansoben">
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Jemaat Eden Mansoben | GKI di Tanah Papua" />
+  <meta property="og:description" content="Bertumbuh dalam Kristus, Melayani dengan Kasih." />
+  <meta property="og:image" content="https://z-cdn-media.chatglm.cn/files/6fdf665f-8a15-42cd-a4ae-c7d2870d3b61.jpg?auth_key=1890418786-9b930747aac1472db316be621631d4a7-0-ed18eb9a9c29ad848d744f24ccb425d7" />
+  <link rel="icon" href="https://z-cdn-media.chatglm.cn/files/4fabba54-2f26-438b-b40e-398b13caf196.png?auth_key=1889554295-cc7a6a9c56ee486f87310ec34f34e44a-0-f2a1c7614b95bb965c91af1bcef7ef30" type="image/png" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1B4D3E', gold: '#D4AF37', accent: '#4F8F7C', bg: '#F4F7F6', darktext: '#1F2937',
+            royal: '#6D28D9', royalLight: '#F5F3FF', teal: '#0D9488', tealLight: '#F0FDFA',
+            ocean: '#0E7490', oceanLight: '#ECFEFF', sky: '#0369A1', skyLight: '#F0F9FF',
+            charcoal: '#334155', crimson: '#B91C1C', crimsonLight: '#FEF2F2', darkblue: '#1E3A8A',
+            'deep-sky': '#0C4A6E', 'gold-accent': '#FBBF24',
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    * { scroll-behavior: smooth; }
+    .fade-in { animation: fadeIn 0.5s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    .btn-delete-pro { background-color: rgba(239, 68, 68, 0.1); color: #dc2626; transition: all 0.2s; }
+    .btn-delete-pro:hover { background-color: #dc2626; color: white; transform: scale(1.05); }
+    .drag-active { background-color: #F0F9FF; border-color: #0284C7 !important; transform: scale(1.02); }
+    .video-wrapper { position: relative; }
+    .video-wrapper video { width: 100%; border-radius: 0.5rem; }
+    .custom-controls { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.6); border-radius: 0 0 8px 8px; color: white; }
+    .progress-bar { flex-grow: 1; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; cursor: pointer; }
+    .progress-fill { height: 100%; background: #FBBF24; border-radius: 5px; width: 0%; }
+    .toast-enter { animation: toastIn 0.3s ease-out forwards; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    #preloader { position: fixed; inset: 0; background: #0C4A6E; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
+    .loader-circle { width: 60px; height: 60px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #FBBF24; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-bg dark:bg-gray-900 text-darktext dark:text-gray-100 transition-colors duration-300">
+  <div id="preloader">
+    <div class="loader-circle mb-4"></div>
+    <h2 class="text-white text-xl font-bold tracking-widest">EDEN MANSOBEN</h2>
+    <p class="text-blue-200 text-sm mt-2">Memuat sistem informasi jemaat...</p>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, createContext, useContext } = React;
+    const AppContext = createContext();
+    const useApp = () => useContext(AppContext);
+
+    const DATA_SCHEMA_VERSION = 6;
+    const SESSION_KEY = 'eden_session_v6';
+    const STORAGE_KEY = 'eden_cms_pro_v6';
+
+    const defaultData = {
+      darkMode: false,
+      siteSettings: {
+        namaGereja: "JEMAAT EDEN MANSOBEN",
+        organisasi: "GKI DI TANAH PAPUA",
+        klasis: "KLASIS SUPIORI UTARA",
+        alamat: "Waryesi, Supiori Timur, Kabupaten Supiori, Papua",
+        telepon: "081243746402",
+        whatsapp: "6281243746402",
+        email: "info@edenmansoben.org",
+        logo: "https://z-cdn-media.chatglm.cn/files/4fabba54-2f26-438b-b40e-398b13caf196.png?auth_key=1889554295-cc7a6a9c56ee486f87310ec34f34e44a-0-f2a1c7614b95bb965c91af1bcef7ef30",
+        heroImage: "https://z-cdn-media.chatglm.cn/files/6fdf665f-8a15-42cd-a4ae-c7d2870d3b61.jpg?auth_key=1890418786-9b930747aac1472db316be621631d4a7-0-ed18eb9a9c29ad848d744f24ccb425d7",
+        heroSideImage: "https://z-cdn-media.chatglm.cn/files/31d6dce0-f8c7-4745-8bca-621d982cb8ce.jpg?auth_key=1890293815-c35f59220123482a90eb3ec39872731c-0-5a117b0c0a07e257e4e12d1f8e378876"
+      },
+      news: [], sermons: [], schedules: [], mimbarItems: [],
+      greeting: { text: "Selamat datang di website Jemaat Eden Mansoben. Marilah kita bertumbuh dalam iman dan melayani dengan kasih.", name: "Pendeta Jemaat", photoBase64: "" },
+      aboutContent: { profil: "Profil gereja belum diisi.", sejarah: "Sejarah gereja belum diisi.", visi: "Visi gereja belum diisi.", misi: "Misi gereja belum diisi." },
+      mediaCategories: ['Ibadah', 'Pelayanan', 'PAM', 'PKB', 'PW', 'PAR', 'Umum', 'Lainnya'],
+      albums: [], mediaItems: []
+    };
+
+    const AppProvider = ({ children }) => {
+      const [appData, setAppData] = useState(defaultData);
+      const [isLoaded, setIsLoaded] = useState(false);
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [toast, setToast] = useState(null);
+
+      useEffect(() => {
+        const session = sessionStorage.getItem(SESSION_KEY);
+        if (session) {
+          try {
+            const sessData = JSON.parse(atob(session));
+            if (sessData.expiry > Date.now()) setIsAdmin(true);
+            else sessionStorage.removeItem(SESSION_KEY);
+          } catch (e) { sessionStorage.removeItem(SESSION_KEY); }
+        }
+
+        localforage.getItem(STORAGE_KEY).then(savedData => {
+          if (savedData) {
+            // Migrasi Data Lama -> Tanpa Merusak Struktur
+            const merged = { ...defaultData, ...savedData };
+            if (savedData.mediaCategories) merged.mediaCategories = Array.from(new Set([...defaultData.mediaCategories, ...savedData.mediaCategories]));
+            merged.news = (merged.news || []).map(n => ({...n, status: n.status || 'Published', createdAt: n.createdAt || Date.now()}));
+            merged.sermons = (merged.sermons || []).map(s => ({...s, createdAt: s.createdAt || Date.now()}));
+            merged.schedules = (merged.schedules || []).map(s => ({...s, createdAt: s.createdAt || Date.now()}));
+            merged.mimbarItems = (merged.mimbarItems || []).map(m => ({...m, status: m.status || 'Published', createdAt: m.createdAt || Date.now()}));
+            merged.albums = (merged.albums || []).map(a => ({...a, createdAt: a.createdAt || Date.now()}));
+            merged.mediaItems = (merged.mediaItems || []).map(m => ({...m, createdAt: m.createdAt || Date.now()}));
+            setAppData(merged);
+          }
+          setIsLoaded(true);
+          
+          const preloader = document.getElementById('preloader');
+          if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => preloader.style.display = 'none', 500);
+          }
+        }).catch(err => { console.error(err); setIsLoaded(true); });
+      }, []);
+
+      useEffect(() => {
+        if (isLoaded) {
+          localforage.setItem(STORAGE_KEY, appData).catch(err => console.error("Gagal simpan", err));
+          document.documentElement.classList.toggle('dark', appData.darkMode);
+        }
+      }, [appData, isLoaded]);
+
+      const updateData = (key, value) => setAppData(prev => ({ ...prev, [key]: value }));
+      
+      const login = (username, password) => {
+        const hash = btoa(`${username}:${password}`);
+        if (hash === btoa('admin:iar211')) {
+          const sess = btoa(JSON.stringify({ user: 'admin', expiry: Date.now() + (60 * 60 * 1000) }));
+          sessionStorage.setItem(SESSION_KEY, sess);
+          setIsAdmin(true);
+          return true;
+        }
+        return false;
+      };
+
+      const logout = () => { sessionStorage.removeItem(SESSION_KEY); setIsAdmin(false); };
+      const showToast = (message, type = 'success') => { setToast({ message, type, id: Date.now() }); setTimeout(() => setToast(null), 3000); };
+
+      return <AppContext.Provider value={{ ...appData, isAdmin, login, logout, updateData, setAppData, showToast }}>
+        {children}
+        {toast && (
+          <div className="fixed top-5 right-5 z-[100] toast-enter">
+            <div className={`flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl text-white ${toast.type === 'success' ? 'bg-teal' : toast.type === 'error' ? 'bg-crimson' : 'bg-sky'}`}>
+              <Icon name={toast.type === 'success' ? 'check-circle' : toast.type === 'error' ? 'alert-circle' : 'info'} className="w-6 h-6" />
+              <span className="font-medium">{toast.message}</span>
+            </div>
+          </div>
+        )}
+      </AppContext.Provider>;
+    };
+
+    const Icon = ({ name, className }) => {
+      useEffect(() => { if (window.lucide) lucide.createIcons(); }, [name]);
+      return <i data-lucide={name} className={className}></i>;
+    };
+    
+    const formatDate = (d) => { if (!d) return ""; const m = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']; const dt = new Date(d); return isNaN(dt) ? d : `${dt.getDate()} ${m[dt.getMonth()]} ${dt.getFullYear()}`; };
+    const formatYear = (d) => { if (!d) return ""; const dt = new Date(d); return isNaN(dt) ? "" : dt.getFullYear(); };
+    const uid = () => (window.crypto ? crypto.randomUUID() : Date.now() + Math.random().toString(36).substr(2, 9));
+
+    const compressImage = (file, maxWidth = 1280, quality = 0.8) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            let canvas = document.createElement('canvas');
+            if (img.width > maxWidth) { const scale = maxWidth / img.width; canvas.width = maxWidth; canvas.height = img.height * scale; } 
+            else { canvas.width = img.width; canvas.height = img.height; }
+            let ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+        };
+        reader.onerror = reject;
+      });
+    };
+
+    const FileUploader = ({ onUpload, label, accept = "image/*", className = "" }) => {
+      const ref = useRef(null);
+      const [fileName, setFileName] = useState("");
+      const [isUploading, setIsUploading] = useState(false);
+      const handleChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setIsUploading(true); setFileName(file.name);
+        try {
+          if (accept.includes("image")) {
+            if (file.size > 10 * 1024 * 1024) { alert("Ukuran gambar maksimal 10MB."); return; }
+            const compressed = await compressImage(file); onUpload(compressed);
+          } else if (accept.includes("video")) {
+            if (file.size > 100 * 1024 * 1024) { alert("Ukuran video terlalu besar (Maks 100MB)."); e.target.value = null; return; }
+            const objectUrl = URL.createObjectURL(file); onUpload(objectUrl);
+          }
+        } catch (err) { alert("Gagal mengupload file."); } 
+        finally { setIsUploading(false); }
+      };
+      return (
+        <div className={className}>
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+          <button type="button" onClick={() => ref.current.click()} disabled={isUploading} className="w-full px-4 py-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2 disabled:opacity-50">
+            {isUploading ? <Icon name="loader" className="w-5 h-5 animate-spin" /> : <Icon name="upload-cloud" className="w-5 h-5" />}
+            {isUploading ? "Memproses..." : (fileName || "Pilih File")}
+          </button>
+          <input ref={ref} type="file" accept={accept} className="hidden" onChange={handleChange} />
+        </div>
+      );
+    };
+
+    const Navbar = ({ navigate }) => {
+      const { darkMode, isAdmin, updateData, siteSettings } = useApp();
+      const [isOpen, setIsOpen] = useState(false);
+      const infoLinks = [{ name: "Tentang", path: "/tentang" }, { name: "Jadwal Ibadah", path: "/jadwal" }, { name: "Khotbah", path: "/khotbah" }, { name: "Berita", path: "/berita" }];
+      const mediaLinks = [{ name: "Galeri Foto", path: "/media/foto" }, { name: "Video Pelayanan", path: "/media/video" }, { name: "Album", path: "/media/album" }, { name: "Arsip", path: "/media/arsip" }];
+      const mimbarLinks = [{ name: "Artikel", path: "/mimbar/artikel" }, { name: "Khotbah", path: "/mimbar/khotbah" }, { name: "Renungan", path: "/mimbar/renungan" }, { name: "Puisi", path: "/mimbar/puisi" }, { name: "Umum", path: "/mimbar/umum" }];
+
+      return (
+        <header className="sticky top-0 z-50 w-full bg-skyLight dark:bg-gray-800 shadow-md">
+          <div className="hidden md:block bg-primary text-white text-xs">
+            <div className="container mx-auto flex justify-between items-center py-2 px-4">
+              <span>{siteSettings.organisasi} — {siteSettings.klasis}</span>
+              <div className="flex items-center gap-4">
+                <button onClick={() => updateData('darkMode', !darkMode)} className="flex items-center gap-1 hover:text-gold"><Icon name={darkMode ? "sun" : "moon"} className="w-3 h-3" /> {darkMode ? "Light" : "Dark"} Mode</button>
+                <button onClick={() => navigate(isAdmin ? '/admin' : '/login')} className="flex items-center gap-1 hover:text-gold"><Icon name="lock" className="w-3 h-3" /> {isAdmin ? 'Dashboard' : 'Login Admin'}</button>
+              </div>
+            </div>
+          </div>
+          <nav className="container mx-auto flex justify-between items-center py-3 px-4">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+              <img src={siteSettings.logo} className="h-12 w-12 object-contain" alt="Logo GKI" />
+              <span className="font-bold text-primary dark:text-white text-lg">{siteSettings.namaGereja}</span>
+            </div>
+            <div className="hidden lg:flex items-center gap-6">
+              <button onClick={() => navigate('/')} className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-gold">Beranda</button>
+              <div className="relative group">
+                <button className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-gold">Mimbar <Icon name="chevron-down" className="w-4 h-4" /></button>
+                <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-gray-800 shadow-xl rounded-lg border dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pt-1 grid grid-cols-2 gap-0">
+                  {mimbarLinks.map(l => <button key={l.path} onClick={() => navigate(l.path)} className="block w-full text-left px-3 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-skyLight dark:hover:bg-gray-700 border-b dark:border-gray-700">{l.name}</button>)}
+                </div>
+              </div>
+              <div className="relative group">
+                <button className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-gold">Informasi <Icon name="chevron-down" className="w-4 h-4" /></button>
+                <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 shadow-xl rounded-lg border dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pt-1">
+                  {infoLinks.map(l => <button key={l.path} onClick={() => navigate(l.path)} className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-skyLight dark:hover:bg-gray-700 border-b dark:border-gray-700 last:border-0">{l.name}</button>)}
+                </div>
+              </div>
+              <div className="relative group">
+                <button className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-gold">Media <Icon name="chevron-down" className="w-4 h-4" /></button>
+                <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 shadow-xl rounded-lg border dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pt-1">
+                  {mediaLinks.map(l => <button key={l.path} onClick={() => navigate(l.path)} className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-skyLight dark:hover:bg-gray-700 border-b dark:border-gray-700 last:border-0">{l.name}</button>)}
+                </div>
+              </div>
+              <button onClick={() => navigate('/kontak')} className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-gold">Kontak</button>
+            </div>
+            <button className="lg:hidden text-primary dark:text-white" onClick={() => setIsOpen(!isOpen)}><Icon name={isOpen ? "x" : "menu"} className="w-7 h-7" /></button>
+          </nav>
+          {isOpen && (
+            <div className="lg:hidden bg-skyLight dark:bg-gray-800 border-t dark:border-gray-700 p-4 flex flex-col gap-1">
+              <button onClick={() => { navigate('/'); setIsOpen(false); }} className="text-left py-3 border-b dark:border-gray-700 font-medium">Beranda</button>
+              {mimbarLinks.map(l => <button key={l.path} onClick={() => { navigate(l.path); setIsOpen(false); }} className="text-left py-3 border-b dark:border-gray-700">Mimbar: {l.name}</button>)}
+              {infoLinks.map(l => <button key={l.path} onClick={() => { navigate(l.path); setIsOpen(false); }} className="text-left py-3 border-b dark:border-gray-700">{l.name}</button>)}
+              {mediaLinks.map(l => <button key={l.path} onClick={() => { navigate(l.path); setIsOpen(false); }} className="text-left py-3 border-b dark:border-gray-700">{l.name}</button>)}
+              <button onClick={() => navigate(isAdmin ? '/admin' : '/login')} className="bg-gold text-white px-4 py-2 rounded-md text-sm font-semibold mt-2">{isAdmin ? 'Dashboard' : 'Login Admin'}</button>
+            </div>
+          )}
+        </header>
+      );
+    };
+
+    const Hero = ({ navigate }) => {
+      const { siteSettings } = useApp();
+      return (
+        <section className="relative overflow-hidden min-h-[90vh] flex items-center">
+          <div className="absolute inset-0 z-0">
+            <img src={siteSettings.heroImage} className="w-full h-full object-cover" alt="Latar Belakang Gereja" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/80 to-primary/40 dark:from-gray-900/90 dark:via-gray-900/80 dark:to-gray-900/40"></div>
+          </div>
+          <div className="container mx-auto px-4 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center fade-in relative z-10">
+            <div className="text-white">
+              <h1 className="text-white leading-tight mb-3 tracking-wide" style={{ fontStyle: 'italic', fontWeight: 'bold', fontSize: '36px' }}>SELAMAT DATANG DI {siteSettings.namaGereja}</h1>
+              <p className="text-base font-semibold text-blue-100 mb-6">{siteSettings.organisasi} — {siteSettings.klasis}</p>
+              <p className="text-lg italic text-blue-50 mb-8 border-l-4 border-gold pl-4">"Bertumbuh dalam Kristus, Melayani dengan Kasih."</p>
+              <div className="flex gap-4 flex-wrap">
+                <button onClick={() => navigate('/jadwal')} className="bg-gold text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gold/90 transition-all shadow-md flex items-center gap-2"><Icon name="calendar-days" className="w-5 h-5"/> Jadwal Ibadah</button>
+                <button onClick={() => navigate('/tentang')} className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary transition-all">Tentang Kami</button>
+              </div>
+            </div>
+            <div className="relative w-full max-w-sm mx-auto md:ml-auto rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/30 dark:ring-gray-700/50 bg-white/10 backdrop-blur-sm">
+              <img src={siteSettings.heroSideImage} className="w-full h-auto block object-contain aspect-video" alt="Gedung Gereja" />
+            </div>
+          </div>
+        </section>
+      );
+    };
+
+    const VideoPlayer = ({ src, onClose }) => {
+      const videoRef = useRef(null);
+      const [playing, setPlaying] = useState(true);
+      const [progress, setProgress] = useState(0);
+      const [duration, setDuration] = useState(0);
+      
+      useEffect(() => { return () => { if (src.startsWith('blob:')) URL.revokeObjectURL(src); }; }, [src]);
+      const togglePlay = () => { if (videoRef.current) { if (videoRef.current.paused) { videoRef.current.play(); setPlaying(true); } else { videoRef.current.pause(); setPlaying(false); } } };
+      const handleTimeUpdate = () => { if (videoRef.current && videoRef.current.duration) setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100); };
+      const handleSeek = (e) => { const rect = e.currentTarget.getBoundingClientRect(); const newTime = ((e.clientX - rect.left) / rect.width) * videoRef.current.duration; if (videoRef.current) videoRef.current.currentTime = newTime; };
+
+      return (
+        <div className="fixed inset-0 bg-black/95 z-[60] flex flex-col items-center justify-center p-4 fade-in" onClick={onClose}>
+          <button className="absolute top-6 right-6 text-white bg-red-600 hover:bg-red-700 w-12 h-12 rounded-full flex items-center justify-center z-10" onClick={onClose}><Icon name="x" className="w-6 h-6"/></button>
+          <div className="w-full max-w-5xl" onClick={e => e.stopPropagation()}>
+            <div className="video-wrapper bg-black rounded-lg overflow-hidden">
+              <video ref={videoRef} src={src} controls={false} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={(e) => setDuration(e.target.duration)} onClick={togglePlay} autoPlay className="w-full aspect-video" />
+              <div className="custom-controls">
+                <button onClick={togglePlay}>{playing ? <Icon name="pause" className="w-6 h-6"/> : <Icon name="play" className="w-6 h-6"/>}</button>
+                <div className="progress-bar" onClick={handleSeek}><div className="progress-fill" style={{width: `${progress}%`}}></div></div>
+                <span className="text-xs">{Math.floor(progress/100 * duration)}s / {Math.floor(duration)}s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const MediaPage = ({ navigate, initialView = 'all' }) => {
+      const { albums, mediaItems, isAdmin, updateData, mediaCategories, showToast } = useApp();
+      const [view, setView] = useState(initialView); 
+      const [search, setSearch] = useState('');
+      const [filterCat, setFilterCat] = useState('All');
+      const [filterYear, setFilterYear] = useState('All');
+      const [lightbox, setLightbox] = useState(null);
+      const [activeAlbum, setActiveAlbum] = useState(null);
+      const [videoViewer, setVideoViewer] = useState(null);
+      
+      const categories = ['All', ...mediaCategories];
+      const years = ['All', ...new Set(mediaItems.map(m => formatYear(m.date)).filter(Boolean))];
+      useEffect(() => { setView(initialView); }, [initialView]);
+
+      const filteredMedia = mediaItems.filter(m => {
+        const matchType = view === 'all' ? true : (view === 'foto' ? m.type === 'photo' : (view === 'video' ? m.type === 'video' : true));
+        const matchSearch = (m.title || "").toLowerCase().includes(search.toLowerCase());
+        const matchCat = filterCat === 'All' || m.cat === filterCat;
+        const matchYear = filterYear === 'All' || formatYear(m.date) === filterYear;
+        return matchType && matchSearch && matchCat && matchYear;
+      });
+
+      const openLightbox = (item, list) => { const photos = list.filter(m => m.type === 'photo'); const index = photos.findIndex(p => p.id === item.id); setLightbox({ photos, index }); };
+      const nextPhoto = () => setLightbox(prev => prev ? { ...prev, index: (prev.index + 1) % prev.photos.length } : prev);
+      const prevPhoto = () => setLightbox(prev => prev ? { ...prev, index: (prev.index - 1 + prev.photos.length) % prev.photos.length } : prev);
+
+      useEffect(() => {
+        const handleKey = (e) => { if (!lightbox) return; if (e.key === 'ArrowRight') nextPhoto(); if (e.key === 'ArrowLeft') prevPhoto(); if (e.key === 'Escape') setLightbox(null); };
+        window.addEventListener('keydown', handleKey); return () => window.removeEventListener('keydown', handleKey);
+      }, [lightbox]);
+
+      const handleDeleteMedia = (e, id) => { e.stopPropagation(); if (window.confirm("Hapus dokumentasi ini?")) { updateData('mediaItems', mediaItems.filter(m => m.id !== id)); showToast("Media dihapus", "success"); } };
+      const headerBg = "https://z-cdn-media.chatglm.cn/files/6fdf665f-8a15-42cd-a4ae-c7d2870d3b61.jpg?auth_key=1890418786-9b930747aac1472db316be621631d4a7-0-ed18eb9a9c29ad848d744f24ccb425d7";
+
+      return (
+        <div className="fade-in min-h-screen pb-16 bg-deep-sky text-white">
+          <div className="relative py-24 text-center overflow-hidden mb-12">
+            <img src={headerBg} className="absolute inset-0 w-full h-full object-cover" alt="Media Header" />
+            <div className="absolute inset-0 bg-deep-sky/80"></div>
+            <div className="relative z-10 container mx-auto px-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">MEDIA & DOKUMENTASI</h1>
+              <p className="text-blue-100/90 max-w-2xl mx-auto text-lg">Melihat kembali setiap perjalanan pelayanan dan karya Tuhan.</p>
+            </div>
+          </div>
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center gap-2 flex-wrap mb-8">
+              {['all', 'foto', 'video', 'album', 'arsip'].map(v => <button key={v} onClick={() => { setView(v); setActiveAlbum(null); }} className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${view === v ? 'bg-gold-accent text-deep-sky shadow-md' : 'bg-white/10 text-white hover:bg-white/20'}`}>{v.charAt(0).toUpperCase() + v.slice(1)}</button>)}
+            </div>
+
+            {view !== 'arsip' && (
+              <div className="flex flex-col md:flex-row justify-between mb-8 gap-4">
+                <div className="flex gap-2 flex-wrap">{categories.map(c => <button key={c} onClick={() => setFilterCat(c)} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${filterCat === c ? 'bg-white text-deep-sky' : 'bg-white/10 text-white hover:bg-white/20'}`}>{c}</button>)}</div>
+                <div className="flex gap-2">
+                  <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="px-4 py-2 border border-white/20 rounded-lg bg-white/10 text-white text-sm"><option value="All" className="text-gray-800">Semua Tahun</option>{years.filter(y => y !== 'All').map(y => <option key={y} value={y} className="text-gray-800">{y}</option>)}</select>
+                  <input type="text" placeholder="Cari..." value={search} onChange={e => setSearch(e.target.value)} className="px-4 py-2 border border-white/20 rounded-lg bg-white/10 text-white placeholder:text-blue-100/60 text-sm" />
+                </div>
+              </div>
+            )}
+
+            {view === 'arsip' ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {years.filter(y => y !== 'All').map(year => (
+                  <div key={year} className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                    <h3 className="text-2xl font-bold text-gold-accent mb-2">{year}</h3>
+                    <p className="text-blue-100/80 text-sm mb-4">{mediaItems.filter(m => formatYear(m.date) === year).length} Dokumentasi</p>
+                    <button onClick={() => { setFilterYear(year); setView('all'); }} className="text-sm text-white bg-gold-accent/20 hover:bg-gold-accent hover:text-deep-sky px-4 py-2 rounded-md font-semibold">Lihat Arsip</button>
+                  </div>
+                ))}
+                {years.filter(y => y !== 'All').length === 0 && <div className="col-span-3 text-center text-blue-100/60 py-20">Belum ada arsip.</div>}
+              </div>
+            ) : view === 'album' && !activeAlbum ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {albums.map(al => {
+                  const photos = mediaItems.filter(m => m.albumTitle === al.title && m.type === 'photo');
+                  const videos = mediaItems.filter(m => m.albumTitle === al.title && m.type === 'video');
+                  const cover = al.cover || (photos[0]?.url || videos[0]?.thumbnail || "");
+                  return (
+                    <div key={al.id} className="bg-white/95 rounded-xl overflow-hidden shadow-lg border-t-4 border-gold-accent hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer" onClick={() => setActiveAlbum(al)}>
+                      <div className="h-48 bg-gray-200 overflow-hidden relative">{cover ? <img src={cover} className="w-full h-full object-cover" alt={al.title} /> : <div className="w-full h-full flex items-center justify-center text-gray-400"><Icon name="image" className="w-16 h-16" /></div>}</div>
+                      <div className="p-6 text-gray-800">
+                        <span className="text-xs font-bold text-gold-accent bg-deep-sky/10 px-2 py-1 rounded-full uppercase">{al.cat}</span>
+                        <h3 className="text-lg font-bold text-deep-sky mt-2 mb-1">{al.title}</h3>
+                        <p className="text-xs text-gray-500 mb-3">{formatDate(al.date)} - {al.location}</p>
+                        <div className="flex gap-4 text-sm text-gray-600"><span className="flex items-center gap-1"><Icon name="image" className="w-4 h-4"/> {photos.length} Foto</span><span className="flex items-center gap-1"><Icon name="video" className="w-4 h-4"/> {videos.length} Video</span></div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {albums.length === 0 && <div className="col-span-3 text-center text-blue-100/60 py-20">Belum ada album dibuat.</div>}
+              </div>
+            ) : view === 'album' && activeAlbum ? (
+              <div>
+                <button onClick={() => setActiveAlbum(null)} className="flex items-center gap-2 text-blue-100/80 hover:text-gold-accent mb-6"><Icon name="arrow-left" className="w-4 h-4" /> Kembali ke Album</button>
+                <h2 className="text-3xl font-bold text-white mb-2">{activeAlbum.title}</h2>
+                <p className="text-blue-100/80 mb-8">{formatDate(activeAlbum.date)} - {activeAlbum.location}</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {mediaItems.filter(m => m.albumTitle === activeAlbum.title).map(m => (
+                    <div key={m.id} className="relative overflow-hidden rounded-lg shadow-lg group h-48 border-2 border-white/20 hover:border-gold-accent transition-all cursor-pointer" onClick={() => m.type === 'photo' ? openLightbox(m, mediaItems.filter(x => x.albumTitle === activeAlbum.title)) : setVideoViewer(m.url)}>
+                      {isAdmin && <button onClick={(e) => handleDeleteMedia(e, m.id)} className="absolute top-2 right-2 z-30 bg-red-600/90 text-white p-1.5 rounded-full hover:bg-red-500"><Icon name="trash-2" className="w-3.5 h-3.5" /></button>}
+                      {m.type === 'photo' ? <img src={m.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt={m.title} /> : <div className="w-full h-full bg-black flex items-center justify-center relative"><img src={m.thumbnail} className="w-full h-full object-cover absolute inset-0" alt="thumb" /><div className="relative z-10 bg-black/50 p-3 rounded-full"><Icon name="play-circle" className="w-12 h-12 text-white"/></div></div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredMedia.map(m => (
+                  <div key={m.id} className="relative overflow-hidden rounded-lg shadow-lg group h-48 border-2 border-white/20 hover:border-gold-accent transition-all cursor-pointer" onClick={() => m.type === 'photo' ? openLightbox(m, filteredMedia) : setVideoViewer(m.url)}>
+                    {isAdmin && <button onClick={(e) => handleDeleteMedia(e, m.id)} className="absolute top-2 right-2 z-30 bg-red-600/90 text-white p-1.5 rounded-full hover:bg-red-500"><Icon name="trash-2" className="w-3.5 h-3.5" /></button>}
+                    {m.type === 'photo' ? <img src={m.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt={m.title} /> : <div className="w-full h-full bg-black flex items-center justify-center relative"><img src={m.thumbnail} className="w-full h-full object-cover absolute inset-0" alt="thumb" /><div className="relative z-10 bg-black/50 p-3 rounded-full"><Icon name="play-circle" className="w-12 h-12 text-white"/></div></div>}
+                  </div>
+                ))}
+                {filteredMedia.length === 0 && <div className="col-span-4 text-center text-blue-100/60 py-20 flex flex-col items-center"><Icon name="search-x" className="w-16 h-16 mb-4 text-blue-100/40" /><p>Tidak ada dokumentasi yang cocok.</p></div>}
+              </div>
+            )}
+          </div>
+
+          {lightbox && lightbox.photos.length > 0 && (
+            <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4 fade-in" onClick={() => setLightbox(null)}>
+              <button className="absolute top-6 right-6 text-white bg-gold-accent hover:bg-gold-accent/80 w-12 h-12 rounded-full flex items-center justify-center z-10" onClick={(e) => { e.stopPropagation(); setLightbox(null); }}><Icon name="x" className="w-6 h-6"/></button>
+              <button onClick={(e) => { e.stopPropagation(); prevPhoto(); }} className="absolute left-4 md:left-10 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full z-10"><Icon name="chevron-left" className="w-8 h-8"/></button>
+              <img src={lightbox.photos[lightbox.index].url} className="max-w-full max-h-[80vh] rounded-lg shadow-2xl border-4 border-gold-accent" alt="Foto Galeri" onClick={e => e.stopPropagation()} />
+              <button onClick={(e) => { e.stopPropagation(); nextPhoto(); }} className="absolute right-4 md:right-10 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full z-10"><Icon name="chevron-right" className="w-8 h-8"/></button>
+            </div>
+          )}
+          {videoViewer && <VideoPlayer src={videoViewer} onClose={() => setVideoViewer(null)} />}
+        </div>
+      );
+    };
+
+    const SchedulePage = () => {
+      const { schedules } = useApp();
+      const sundayServices = schedules.filter(s => s.type === 'Minggu');
+      const otherServices = schedules.filter(s => s.type !== 'Minggu');
+
+      return (
+        <div className="bg-bg dark:bg-gray-900 min-h-screen pb-16 fade-in">
+          <div className="container mx-auto px-4 py-16">
+            <h2 className="text-4xl font-bold text-primary dark:text-white text-center mb-12">Pelayanan Ibadah Jemaat</h2>
+            {schedules.length === 0 && <div className="text-center text-gray-500 py-20">Belum ada jadwal ibadah.</div>}
+            <div className="grid md:grid-cols-2 gap-8 mb-16">
+              {sundayServices.map(s => (
+                <div key={s.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border-t-8 border-primary dark:border-gold">
+                  <div className="bg-primary dark:bg-gray-900 p-6 text-center">
+                    <h4 className="text-xl font-bold text-gold uppercase tracking-wider mb-2">{s.group}</h4>
+                    <p className="text-2xl font-bold text-white">{s.date}</p>
+                    <div className="flex items-center justify-center gap-4 text-gray-300 text-sm mt-2">
+                      <span className="flex items-center gap-1"><Icon name="clock" className="w-4 h-4" /> {s.time}</span>
+                      <span className="flex items-center gap-1"><Icon name="map-pin" className="w-4 h-4" /> {s.place}</span>
+                    </div>
+                  </div>
+                  <div className="p-8 flex flex-col items-center text-center">
+                    <div className="w-32 h-32 rounded-full bg-gray-100 dark:bg-gray-700 border-4 border-gold shadow-lg flex items-center justify-center text-gray-400 overflow-hidden mb-4">
+                      {s.preacherPhoto ? <img src={s.preacherPhoto} className="w-full h-full object-cover" alt={s.preacher} /> : <Icon name="user" className="w-12 h-12" />}
+                    </div>
+                    <p className="text-sm text-gray-500 mb-1">Pelayan Firman</p>
+                    <h5 className="text-lg font-bold text-primary dark:text-white mb-6">{s.preacher}</h5>
+                    <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 w-full">
+                      <p className="text-sm text-gray-500 mb-2">Tema Khotbah:</p>
+                      <h5 className="text-xl font-bold text-crimson dark:text-red-400 italic mb-2">"{s.theme}"</h5>
+                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{s.verse}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {otherServices.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border-t-8 border-teal mb-12">
+                <table className="w-full text-left">
+                  <thead className="bg-teal text-white text-sm"><tr><th className="p-4">Keterangan</th><th className="p-4 hidden md:table-cell">Tanggal</th><th className="p-4 hidden md:table-cell">Pelayan</th><th className="p-4">Tema</th></tr></thead>
+                  <tbody>
+                    {otherServices.map(s => (
+                      <tr key={s.id} className="border-t dark:border-gray-700 text-sm hover:bg-tealLight dark:hover:bg-gray-700">
+                        <td className="p-4 font-bold text-teal dark:text-teal-400">{s.group}</td>
+                        <td className="p-4 hidden md:table-cell text-gray-700 dark:text-gray-300">{s.date} <br/> <span className="text-xs">{s.time}</span></td>
+                        <td className="p-4 hidden md:table-cell font-medium text-primary dark:text-white">{s.preacher}</td>
+                        <td className="p-4 text-gray-600 dark:text-gray-400 italic">"{s.theme}" <br/> <span className="text-xs font-bold not-italic">{s.verse}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const NewsPage = () => {
+      const { news } = useApp();
+      const [expandedId, setExpandedId] = useState(null);
+      const publishedNews = news.filter(n => n.status === 'Published');
+      
+      return (
+        <div className="fade-in min-h-screen pb-16 bg-deep-sky text-white">
+          <div className="container mx-auto px-4 py-16">
+            <h2 className="text-4xl font-bold text-white text-center mb-12">Berita & Informasi</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              {publishedNews.map(n => (
+                <div key={n.id} className="bg-white/95 rounded-xl overflow-hidden shadow-lg border-t-4 border-gold-accent flex flex-col">
+                  <div className="h-48 bg-gradient-to-br from-deep-sky to-blue-900 flex items-center justify-center text-white p-4 text-center font-semibold overflow-hidden">
+                    {n.imageUrl ? <img src={n.imageUrl} className="w-full h-full object-cover" alt={n.title} /> : <span>{n.cat}</span>}
+                  </div>
+                  <div className="p-6 text-gray-800 flex flex-col flex-grow">
+                    <p className="text-xs text-gray-500 mb-2">{formatDate(n.date)}</p>
+                    <h3 className="text-lg font-bold text-deep-sky mb-3">{n.title}</h3>
+                    <p className={`text-sm text-gray-600 flex-grow ${expandedId === n.id ? '' : 'line-clamp-3'}`}>{n.excerpt}</p>
+                    {n.excerpt && n.excerpt.length > 150 && (
+                      <button onClick={() => setExpandedId(expandedId === n.id ? null : n.id)} className="mt-4 text-sm font-semibold text-deep-sky hover:text-sky flex items-center gap-1">
+                        {expandedId === n.id ? "Sembunyikan" : "Baca Selengkapnya"} <Icon name={expandedId === n.id ? "chevron-up" : "chevron-down"} className="w-4 h-4"/>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {publishedNews.length === 0 && <div className="col-span-3 text-center text-blue-100/60 py-20">Belum ada berita dipublikasikan.</div>}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const SermonPage = () => {
+      const { sermons } = useApp();
+      return (
+        <div className="fade-in bg-bg dark:bg-gray-900 min-h-screen pb-16">
+          <div className="container mx-auto px-4 py-16">
+            <h2 className="text-4xl font-bold text-primary dark:text-white text-center mb-12">Rancangan Khotbah</h2>
+            <div className="space-y-8 max-w-4xl mx-auto">
+              {sermons.map(s => (
+                <div key={s.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border-l-8 border-gold flex flex-col md:flex-row">
+                  <div className="bg-primary dark:bg-gray-900 p-6 md:w-64 flex flex-col justify-center items-center text-center">
+                    <p className="text-sm text-gray-300 uppercase mb-2">Tema</p>
+                    <h3 className="text-lg font-bold text-gold uppercase italic mb-4">"{s.theme}"</h3>
+                    <p className="text-sm font-semibold text-white border-t border-white/20 pt-3">{s.verse}</p>
+                  </div>
+                  <div className="p-8 flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="ml-auto text-right"><p className="text-xs text-gray-500">Tanggal</p><p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{s.date}</p></div>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm">{s.content}</p>
+                  </div>
+                </div>
+              ))}
+              {sermons.length === 0 && <div className="text-center text-gray-500 py-20">Belum ada rancangan khotbah.</div>}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const MimbarPage = ({ navigate, category }) => {
+      const { mimbarItems } = useApp();
+      const [expandedId, setExpandedId] = useState(null);
+      const filtered = mimbarItems.filter(item => item.cat === category && item.status === 'Published');
+      const catCap = category.charAt(0).toUpperCase() + category.slice(1);
+      return (
+        <div className="fade-in min-h-screen pb-16 bg-deep-sky text-white">
+          <div className="container mx-auto px-4 py-16">
+            <div className="max-w-3xl mx-auto text-center mb-12">
+              <span className="inline-block bg-gold-accent/20 text-gold-accent text-sm font-bold px-4 py-1 rounded-full uppercase mb-3">Topik: {catCap}</span>
+              <h2 className="text-4xl font-bold text-white mb-2">Konten Mimbar {catCap}</h2>
+            </div>
+            {filtered.length === 0 ? (
+              <div className="text-center text-blue-100/60 py-20">Belum ada konten.</div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filtered.map(item => (
+                  <div key={item.id} className="bg-white/95 rounded-xl overflow-hidden shadow-lg flex flex-col">
+                    {item.imageUrl && <div className="h-56 w-full overflow-hidden bg-gray-100"><img src={item.imageUrl} className="w-full h-full object-cover" alt={item.title} /></div>}
+                    <div className="p-6 flex flex-col flex-grow text-gray-800">
+                      <h3 className="text-lg font-bold text-deep-sky mb-3">{item.title}</h3>
+                      <div className="flex items-center gap-3 text-xs text-gray-500 mb-3"><span>{item.author}</span><span>{item.date}</span></div>
+                      <p className={`text-sm text-gray-600 flex-grow mb-4 ${expandedId === item.id ? '' : 'line-clamp-3'}`}>{item.excerpt}</p>
+                      {item.excerpt && item.excerpt.length > 120 && (
+                        <button onClick={() => setExpandedId(expandedId === item.id ? null : item.id)} className="mt-auto text-sm font-semibold text-deep-sky hover:text-sky flex items-center gap-1">
+                          {expandedId === item.id ? "Sembunyikan" : "Baca Selengkapnya"} <Icon name={expandedId === item.id ? "chevron-up" : "chevron-down"} className="w-4 h-4"/>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const AboutPage = () => {
+      const { aboutContent, greeting } = useApp();
+      return (
+        <div className="fade-in min-h-screen pb-16 bg-deep-sky text-white">
+          <div className="container mx-auto px-4 py-16">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-16"><h2 className="text-4xl font-bold text-white mb-2">Tentang Kami</h2><p className="text-blue-100/80">Mengenal lebih dekat Jemaat Eden Mansoben</p></div>
+              <div className="flex flex-col md:flex-row items-center gap-10 mb-16 bg-white/5 p-8 rounded-2xl border border-white/10">
+                <div className="w-40 h-40 rounded-full bg-white/10 border-4 border-gold-accent/50 flex items-center justify-center text-blue-100/60 overflow-hidden shrink-0">
+                  {greeting.photoBase64 ? <img src={greeting.photoBase64} className="w-full h-full object-cover" alt="Pimpinan" /> : <Icon name="user" className="w-20 h-20" />}
+                </div>
+                <div className="text-center md:text-left">
+                  <h3 className="text-2xl font-bold text-gold-accent mb-4">{greeting.name}</h3>
+                  <p className="text-blue-100/90 leading-relaxed italic">"{greeting.text}"</p>
+                </div>
+              </div>
+              <div className="mb-12"><h3 className="text-2xl font-bold text-gold-accent mb-4">Profil Gereja</h3><div className="bg-white/5 p-6 rounded-xl border border-white/10 text-blue-100/90 leading-relaxed whitespace-pre-wrap">{aboutContent.profil}</div></div>
+              <div className="mb-12"><h3 className="text-2xl font-bold text-gold-accent mb-4">Sejarah</h3><div className="bg-white/5 p-6 rounded-xl border border-white/10 text-blue-100/90 leading-relaxed whitespace-pre-wrap">{aboutContent.sejarah}</div></div>
+              <div className="mb-12"><h3 className="text-2xl font-bold text-gold-accent mb-4">Visi</h3><div className="bg-white/5 p-6 rounded-xl border border-white/10 text-blue-100/90 leading-relaxed whitespace-pre-wrap">{aboutContent.visi}</div></div>
+              <div><h3 className="text-2xl font-bold text-gold-accent mb-4">Misi</h3><div className="bg-white/5 p-6 rounded-xl border border-white/10 text-blue-100/90 leading-relaxed whitespace-pre-wrap">{aboutContent.misi}</div></div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const ContactPage = () => {
+      const { siteSettings } = useApp();
+      const [form, setForm] = useState({ name: '', email: '', message: '' });
+      const waLink = `https://wa.me/${siteSettings.whatsapp}?text=${encodeURIComponent("Shalom, saya ingin bertanya seputar informasi jemaat Eden Mansoben.")}`;
+      
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const waText = `Shalom, saya ${form.name}.\nEmail: ${form.email}\n\nPesan:\n${form.message}`;
+        window.open(`https://wa.me/${siteSettings.whatsapp}?text=${encodeURIComponent(waText)}`, '_blank');
+      };
+
+      return (
+        <div className="fade-in bg-skyLight dark:bg-gray-900 min-h-screen pb-16">
+          <div className="container mx-auto px-4 py-16">
+            <h2 className="text-4xl font-bold text-sky dark:text-white text-center mb-12">Hubungi Kami</h2>
+            <div className="grid md:grid-cols-2 gap-12">
+              <div>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border-l-4 border-sky">
+                  <p className="flex gap-3"><Icon name="map-pin" className="w-5 h-5 text-sky shrink-0"/> {siteSettings.alamat}</p>
+                  <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex gap-3 items-center hover:text-sky"><Icon name="message-circle" className="w-5 h-5 text-sky shrink-0"/> Chat WhatsApp: <span className="font-semibold text-sky underline">{siteSettings.telepon}</span></a>
+                  <p className="flex gap-3"><Icon name="mail" className="w-5 h-5 text-sky shrink-0"/> {siteSettings.email}</p>
+                </div>
+                <div className="mt-8 rounded-xl overflow-hidden shadow-lg border-4 border-white dark:border-gray-700"><iframe title="Lokasi" src="https://www.google.com/maps?q=-0.7516163,135.7615763&z=14&output=embed&hl=id&maptype=satellite" width="100%" height="300" style={{ border: 0 }} allowFullScreen="" loading="lazy"></iframe></div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md border-t-4 border-sky">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <p className="text-gray-500 text-sm mb-4">Pesan dikirim langsung melalui WhatsApp Admin.</p>
+                  <input required type="text" placeholder="Nama Lengkap" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full px-4 py-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-sky focus:outline-none" />
+                  <input required type="email" placeholder="Email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full px-4 py-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-sky focus:outline-none" />
+                  <textarea required rows="4" placeholder="Pesan Anda" value={form.message} onChange={e => setForm({...form, message: e.target.value})} className="w-full px-4 py-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-sky focus:outline-none"></textarea>
+                  <button className="w-full bg-sky text-white py-3 rounded-lg font-semibold hover:bg-sky/90 transition-colors">KIRIM PESAN VIA WHATSAPP</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const AdminDashboard = ({ navigate }) => {
+      const { isAdmin, updateData, news, sermons, schedules, mimbarItems, greeting, aboutContent, albums, mediaItems, mediaCategories, siteSettings, setAppData, logout, showToast } = useApp();
+      const [view, setView] = useState('dashboard');
+      const [dragActive, setDragActive] = useState(false);
+      const [pendingUploads, setPendingUploads] = useState([]);
+      const [editingItem, setEditingItem] = useState(null);
+      const [videoMode, setVideoMode] = useState('upload');
+      const fileRef = useRef(null);
+      const fileInputRestore = useRef(null);
+
+      useEffect(() => { if (!isAdmin) navigate('/login'); }, [isAdmin]);
+
+      const DeleteBtn = ({ onClick }) => <button type="button" onClick={onClick} className="btn-delete-pro inline-flex items-center gap-1 text-xs font-semibold px-3 py-2 rounded-md shadow-sm"><Icon name="trash-2" className="w-3.5 h-3.5" /> Hapus</button>;
+      const EditBtn = ({ onClick }) => <button type="button" onClick={onClick} className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-2 rounded-md shadow-sm bg-indigo-100 text-indigo-700 hover:bg-indigo-600 hover:text-white"><Icon name="edit" className="w-3.5 h-3.5" /> Edit</button>;
+      
+      const handleExport = () => {
+        const dataStr = JSON.stringify({ darkMode: false, siteSettings, news, sermons, schedules, mimbarItems, greeting, aboutContent, mediaCategories, albums, mediaItems }, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `eden-mansoben-backup-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
+        showToast("Backup berhasil diunduh");
+      };
+
+      const handleRestore = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (window.confirm("Restore akan mengganti data website yang sedang tersimpan. Lanjutkan?")) {
+              setAppData(prev => ({ ...prev, ...data })); showToast("Data berhasil dipulihkan", "success");
+              setTimeout(() => window.location.reload(), 1500);
+            }
+          } catch (err) { showToast("File restore tidak valid", "error"); }
+        };
+        reader.readAsText(file);
+      };
+
+      const handleDragFiles = async (files) => {
+        for (const file of Array.from(files)) {
+          if (file.size > 10 * 1024 * 1024) { alert(`File ${file.name} lebih dari 10MB, dilewati.`); continue; }
+          try { const compressed = await compressImage(file); setPendingUploads(prev => [...prev, { id: uid(), title: file.name, url: compressed, type: 'photo' }]); } 
+          catch (e) { console.error(e); }
+        }
+      };
+      const onDrop = (e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); if (e.dataTransfer.files) handleDragFiles(e.dataTransfer.files); };
+      const resetForm = () => setEditingItem(null);
+
+      const submitNews = (e) => { e.preventDefault(); const fd = new FormData(e.target); const data = { id: editingItem?.id || uid(), date: fd.get('date'), title: fd.get('title'), cat: fd.get('cat'), imageUrl: fd.get('imageUrl'), excerpt: fd.get('excerpt'), status: fd.get('status') || 'Published', createdAt: editingItem?.createdAt || Date.now() }; updateData('news', editingItem ? news.map(n => n.id === editingItem.id ? data : n) : [data, ...news]); e.target.reset(); resetForm(); showToast(editingItem ? "Berita diperbarui" : "Berita ditambahkan"); };
+      const submitSermon = (e) => { e.preventDefault(); const fd = new FormData(e.target); const data = { id: editingItem?.id || uid(), date: fd.get('date'), preacher: fd.get('preacher'), theme: fd.get('theme'), verse: fd.get('verse'), content: fd.get('content'), createdAt: editingItem?.createdAt || Date.now() }; updateData('sermons', editingItem ? sermons.map(s => s.id === editingItem.id ? data : s) : [data, ...sermons]); e.target.reset(); resetForm(); showToast(editingItem ? "Khotbah diperbarui" : "Khotbah ditambahkan"); };
+      const submitSchedule = (e) => { e.preventDefault(); const fd = new FormData(e.target); const data = { id: editingItem?.id || uid(), type: fd.get('type'), group: fd.get('group'), date: fd.get('date'), time: fd.get('time'), place: fd.get('place'), preacher: fd.get('preacher'), preacherPhoto: fd.get('preacherPhoto'), theme: fd.get('theme'), verse: fd.get('verse'), createdAt: editingItem?.createdAt || Date.now() }; updateData('schedules', editingItem ? schedules.map(s => s.id === editingItem.id ? data : s) : [data, ...schedules]); e.target.reset(); resetForm(); showToast(editingItem ? "Jadwal diperbarui" : "Jadwal ditambahkan"); };
+      const submitMimbar = (e) => { e.preventDefault(); const fd = new FormData(e.target); const data = { id: editingItem?.id || uid(), cat: fd.get('cat'), title: fd.get('title'), author: fd.get('author'), date: fd.get('date'), imageUrl: fd.get('imageUrl'), excerpt: fd.get('excerpt'), status: fd.get('status') || 'Published', createdAt: editingItem?.createdAt || Date.now() }; updateData('mimbarItems', editingItem ? mimbarItems.map(m => m.id === editingItem.id ? data : m) : [data, ...mimbarItems]); e.target.reset(); resetForm(); showToast(editingItem ? "Mimbar diperbarui" : "Mimbar ditambahkan"); };
+      const submitAlbum = (e) => { e.preventDefault(); const fd = new FormData(e.target); const data = { id: editingItem?.id || uid(), title: fd.get('title'), cat: fd.get('cat'), date: fd.get('date'), location: fd.get('location'), description: fd.get('description'), cover: fd.get('cover'), createdAt: editingItem?.createdAt || Date.now() }; updateData('albums', editingItem ? albums.map(a => a.id === editingItem.id ? data : a) : [data, ...albums]); e.target.reset(); resetForm(); showToast(editingItem ? "Album diperbarui" : "Album dibuat"); };
+      const submitVideo = (e) => { e.preventDefault(); const fd = new FormData(e.target); let url = fd.get('url') || ''; const fileUrl = fd.get('videoFile'); if (fileUrl) { url = fileUrl; } else if (url.includes("watch?v=")) { url = url.replace("watch?v=", "embed/"); } else if (url.includes("youtu.be/")) { url = url.replace("youtu.be/", "www.youtube.com/embed/"); } if (!url) { showToast("Silakan upload file video atau masukkan link YouTube", "error"); return; } const data = { id: uid(), albumTitle: fd.get('albumTitle'), type: 'video', title: fd.get('title'), url: url, thumbnail: fd.get('thumbnail') || "", cat: fd.get('cat'), date: fd.get('date'), location: fd.get('location'), createdAt: Date.now() }; updateData('mediaItems', [data, ...mediaItems]); e.target.reset(); showToast("Video ditambahkan"); };
+      const submitPhotos = (e) => { e.preventDefault(); const fd = new FormData(e.target); const albumTitle = fd.get('albumTitle'); const cat = fd.get('cat'); const date = fd.get('date'); const loc = fd.get('location'); const newItems = pendingUploads.map(p => ({ ...p, id: uid(), albumTitle: albumTitle, cat: cat, date: date, location: loc, type: 'photo', createdAt: Date.now() })); updateData('mediaItems', [...newItems, ...mediaItems]); setPendingUploads([]); showToast(`${newItems.length} foto disimpan`); };
+
+      return (
+        <div className="flex flex-col md:flex-row min-h-screen bg-skyLight dark:bg-gray-900 fade-in">
+          <aside className="w-full md:w-64 bg-gradient-to-b from-sky to-blue-900 text-white p-6 shadow-xl md:h-screen md:sticky md:top-0 overflow-y-auto">
+            <div className="flex items-center gap-2 mb-8"><Icon name="shield-check" className="w-8 h-8 text-amber-400" /><div><h2 className="text-lg font-bold">CMS Admin</h2><p className="text-xs text-blue-200">Eden Mansoben</p></div></div>
+            <nav className="space-y-1">
+              {['dashboard', 'settings', 'greeting', 'about', 'sermon', 'news', 'schedule', 'mimbar', 'media'].map(v => (
+                <button key={v} onClick={() => { setView(v); resetForm(); }} className={`w-full text-left px-4 py-2.5 rounded-lg flex items-center gap-3 capitalize ${view === v ? 'bg-white text-sky font-bold' : 'hover:bg-white/10'}`}>
+                  <Icon name={{dashboard:'home', settings:'settings', greeting:'message-square', about:'info', sermon:'book-open', news:'newspaper', schedule:'calendar', mimbar:'file-text', media:'image'}[v]} className="w-5 h-5"/> {v}
+                </button>
+              ))}
+              <button onClick={() => { logout(); navigate('/'); }} className="w-full text-left px-4 py-2.5 rounded-lg text-amber-300 hover:bg-amber-500/20 flex items-center gap-3 mt-4"><Icon name="log-out" className="w-5 h-5"/> Logout</button>
+            </nav>
+          </aside>
+          
+          <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+            {view === 'dashboard' && (
+              <div>
+                <h1 className="text-2xl font-bold text-sky mb-2">Dashboard</h1>
+                <p className="text-gray-500 mb-6">Selamat datang kembali, Admin.</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  {[{t:"Berita", v:news.length, i:"newspaper", c:"border-sky"}, {t:"Khotbah", v:sermons.length, i:"book-open", c:"border-indigo-500"}, {t:"Jadwal", v:schedules.length, i:"calendar", c:"border-teal-500"}, {t:"Media", v:mediaItems.length, i:"image", c:"border-pink-500"}].map(s => (
+                    <div key={s.t} className={`bg-white p-4 md:p-6 rounded-xl shadow-sm flex items-center justify-between border-b-4 ${s.c}`}>
+                      <div><p className="text-gray-500 text-sm">{s.t}</p><h3 className="text-2xl md:text-3xl font-bold text-gray-800">{s.v}</h3></div>
+                      <div className={`${s.c.replace('border-', 'bg-')} p-3 rounded-lg text-white shadow-md`}><Icon name={s.i} className="w-6 h-6"/></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm border-t-4 border-amber-500">
+                  <h3 className="text-lg font-bold text-amber-600 mb-4">Backup & Restore Data</h3>
+                  <p className="text-sm text-gray-500 mb-4">Cadangkan data website secara berkala untuk menghindari kehilangan data.</p>
+                  <div className="flex flex-wrap gap-4">
+                    <button onClick={handleExport} className="flex items-center gap-2 bg-amber-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amber-600"><Icon name="download" className="w-5 h-5"/> Export Backup</button>
+                    <button onClick={() => fileInputRestore.current.click()} className="flex items-center gap-2 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300"><Icon name="upload" className="w-5 h-5"/> Restore Backup</button>
+                    <input type="file" accept="application/json" ref={fileInputRestore} className="hidden" onChange={handleRestore} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {view === 'settings' && (
+              <div>
+                <h1 className="text-2xl font-bold text-sky mb-6">Pengaturan Website</h1>
+                <div className="bg-white p-8 rounded-xl shadow-sm border-t-4 border-sky max-w-3xl space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Nama Gereja</label><input type="text" value={siteSettings.namaGereja} onChange={e => updateData('siteSettings', {...siteSettings, namaGereja: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Klasis</label><input type="text" value={siteSettings.klasis} onChange={e => updateData('siteSettings', {...siteSettings, klalis: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">WhatsApp (format: 62...)</label><input type="text" value={siteSettings.whatsapp} onChange={e => updateData('siteSettings', {...siteSettings, whatsapp: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Telepon</label><input type="text" value={siteSettings.telepon} onChange={e => updateData('siteSettings', {...siteSettings, telepon: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Email</label><input type="email" value={siteSettings.email} onChange={e => updateData('siteSettings', {...siteSettings, email: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Alamat</label><input type="text" value={siteSettings.alamat} onChange={e => updateData('siteSettings', {...siteSettings, alamat: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                  </div>
+                  <FileUploader label="URL Logo Gereja" onUpload={(url) => updateData('siteSettings', {...siteSettings, logo: url})} />
+                  <FileUploader label="URL Gambar Latar Hero" onUpload={(url) => updateData('siteSettings', {...siteSettings, heroImage: url})} />
+                  <button onClick={() => showToast('Pengaturan disimpan')} className="bg-sky text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky/90 flex items-center gap-2"><Icon name="save" className="w-5 h-5"/> Simpan</button>
+                </div>
+              </div>
+            )}
+
+            {view === 'greeting' && (
+              <div>
+                <h1 className="text-2xl font-bold text-sky mb-6">Sambutan Pimpinan</h1>
+                <div className="bg-white p-8 rounded-xl shadow-sm border-t-4 border-sky max-w-3xl space-y-4">
+                  <div><label className="block text-xs font-medium text-gray-700 mb-1">Teks Sambutan</label><textarea rows="4" value={greeting.text} onChange={e => updateData('greeting', {...greeting, text: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                  <div><label className="block text-xs font-medium text-gray-700 mb-1">Nama Pimpinan</label><input type="text" value={greeting.name} onChange={e => updateData('greeting', {...greeting, name: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                  <FileUploader label="Upload Foto Pimpinan" onUpload={(url) => updateData('greeting', {...greeting, photoBase64: url})} />
+                  {greeting.photoBase64 && <img src={greeting.photoBase64} className="w-24 h-24 rounded-full object-cover border-4 border-sky/20" alt="Preview" />}
+                  <button onClick={() => showToast('Sambutan disimpan')} className="bg-sky text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky/90 flex items-center gap-2"><Icon name="save" className="w-5 h-5"/> Simpan</button>
+                </div>
+              </div>
+            )}
+
+            {view === 'about' && (
+              <div>
+                <h1 className="text-2xl font-bold text-sky mb-6">Tentang Kami</h1>
+                <div className="bg-white p-8 rounded-xl shadow-sm border-t-4 border-sky max-w-3xl space-y-4">
+                  <div><label className="block text-xs font-medium text-gray-700 mb-1">Profil</label><textarea rows="3" value={aboutContent.profil} onChange={e => updateData('aboutContent', {...aboutContent, profil: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                  <div><label className="block text-xs font-medium text-gray-700 mb-1">Sejarah</label><textarea rows="3" value={aboutContent.sejarah} onChange={e => updateData('aboutContent', {...aboutContent, sejarah: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                  <div><label className="block text-xs font-medium text-gray-700 mb-1">Visi</label><textarea rows="3" value={aboutContent.visi} onChange={e => updateData('aboutContent', {...aboutContent, visi: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                  <div><label className="block text-xs font-medium text-gray-700 mb-1">Misi</label><textarea rows="3" value={aboutContent.misi} onChange={e => updateData('aboutContent', {...aboutContent, misi: e.target.value})} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" /></div>
+                  <button onClick={() => showToast('Tentang Kami disimpan')} className="bg-sky text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky/90 flex items-center gap-2"><Icon name="save" className="w-5 h-5"/> Simpan</button>
+                </div>
+              </div>
+            )}
+
+            {view === 'news' && (
+              <div>
+                <h1 className="text-2xl font-bold text-teal-600 mb-6">Manajemen Berita</h1>
+                <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 border-t-4 border-teal-500">
+                  <h3 className="text-lg font-bold text-teal-600 mb-4">{editingItem ? 'Edit Berita' : 'Tambah Berita'}</h3>
+                  <form onSubmit={submitNews} key={editingItem ? editingItem.id : 'new'} className="grid md:grid-cols-2 gap-5">
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tanggal</label><input required name="date" type="date" defaultValue={editingItem?.date ? new Date(editingItem.date).toISOString().substr(0, 10) : ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Kategori</label><select required name="cat" defaultValue={editingItem?.cat || "Umum"} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"><option>PKB</option><option>PW</option><option>Pemuda</option><option>Umum</option></select></div>
+                      <FileUploader label="Upload Gambar" onUpload={(url) => document.getElementById('news-img').value = url} />
+                      <input id="news-img" name="imageUrl" type="hidden" defaultValue={editingItem?.imageUrl || ""} />
+                    </div>
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Judul</label><input required name="title" type="text" defaultValue={editingItem?.title || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Isi Berita</label><textarea required name="excerpt" rows="4" defaultValue={editingItem?.excerpt || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Status</label><select name="status" defaultValue={editingItem?.status || "Published"} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"><option value="Published">Published</option><option value="Draft">Draft</option></select></div>
+                      <div className="flex gap-2">
+                        <button className="flex-1 bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 flex items-center justify-center gap-2"><Icon name="save" className="w-5 h-5"/> Simpan</button>
+                        {editingItem && <button type="button" onClick={resetForm} className="bg-gray-200 px-4 rounded-lg">Batal</button>}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-100 text-gray-700 text-sm"><tr><th className="p-4">Judul</th><th className="p-4">Status</th><th className="p-4 text-right">Aksi</th></tr></thead>
+                    <tbody>
+                      {news.map(n => <tr key={n.id} className="border-t text-sm hover:bg-gray-50"><td className="p-4 font-medium text-gray-800">{n.title}</td><td className="p-4"><span className={`text-xs px-2 py-1 rounded ${n.status === 'Published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{n.status}</span></td><td className="p-4 text-right flex gap-1 justify-end"><EditBtn onClick={() => setEditingItem(n)} /><DeleteBtn onClick={() => { if (window.confirm('Hapus berita ini?')) updateData('news', news.filter(x => x.id !== n.id)); }} /></td></tr>)}
+                      {news.length === 0 && <tr><td colSpan="3" className="p-8 text-center text-gray-400">Belum ada berita.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {view === 'sermon' && (
+              <div>
+                <h1 className="text-2xl font-bold text-indigo-600 mb-6">Manajemen Khotbah</h1>
+                <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 border-t-4 border-indigo-500">
+                  <h3 className="text-lg font-bold text-indigo-600 mb-4">{editingItem ? 'Edit Khotbah' : 'Tambah Khotbah'}</h3>
+                  <form onSubmit={submitSermon} key={editingItem ? editingItem.id : 'new'} className="grid lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tanggal</label><input required name="date" type="text" placeholder="09 Agustus 2026" defaultValue={editingItem?.date || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Pelayan Firman</label><input required name="preacher" type="text" defaultValue={editingItem?.preacher || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tema</label><input required name="theme" type="text" defaultValue={editingItem?.theme || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Ayat</label><input required name="verse" type="text" defaultValue={editingItem?.verse || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                    </div>
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Isi</label><textarea required name="content" rows="6" defaultValue={editingItem?.content || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea></div>
+                      <div className="flex gap-2">
+                        <button className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 flex items-center justify-center gap-2"><Icon name="save" className="w-5 h-5"/> Publikasi</button>
+                        {editingItem && <button type="button" onClick={resetForm} className="bg-gray-200 px-4 rounded-lg">Batal</button>}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-100 text-gray-700 text-sm"><tr><th className="p-4">Tema</th><th className="p-4 text-right">Aksi</th></tr></thead>
+                    <tbody>
+                      {sermons.map(s => <tr key={s.id} className="border-t text-sm hover:bg-gray-50"><td className="p-4 font-medium text-gray-800">"{s.theme}"</td><td className="p-4 text-right flex gap-1 justify-end"><EditBtn onClick={() => setEditingItem(s)} /><DeleteBtn onClick={() => { if (window.confirm('Hapus khotbah ini?')) updateData('sermons', sermons.filter(x => x.id !== s.id)); }} /></td></tr>)}
+                      {sermons.length === 0 && <tr><td colSpan="2" className="p-8 text-center text-gray-400">Belum ada khotbah.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {view === 'schedule' && (
+              <div>
+                <h1 className="text-2xl font-bold text-amber-600 mb-6">Manajemen Jadwal</h1>
+                <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 border-t-4 border-amber-500">
+                  <h3 className="text-lg font-bold text-amber-600 mb-4">{editingItem ? 'Edit Jadwal' : 'Tambah Jadwal'}</h3>
+                  <form onSubmit={submitSchedule} key={editingItem ? editingItem.id : 'new'} className="grid lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tipe</label><select required name="type" defaultValue={editingItem?.type || "Minggu"} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"><option value="Minggu">Minggu</option><option value="Unsur">Unsur</option><option value="Rayon">Rayon</option></select></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Keterangan</label><input required name="group" type="text" placeholder="Minggu Pagi / PAR / KSP 01" defaultValue={editingItem?.group || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tanggal</label><input required name="date" type="text" placeholder="09 Agustus 2026" defaultValue={editingItem?.date || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Waktu</label><input required name="time" type="text" placeholder="09:00 WIT" defaultValue={editingItem?.time || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tempat</label><input required name="place" type="text" defaultValue={editingItem?.place || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                    </div>
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Pelayan Firman</label><input required name="preacher" type="text" defaultValue={editingItem?.preacher || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                      <FileUploader label="Upload Foto Pelayan" onUpload={(url) => document.getElementById('sched-photo').value = url} />
+                      <input id="sched-photo" name="preacherPhoto" type="hidden" defaultValue={editingItem?.preacherPhoto || ""} />
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tema</label><input required name="theme" type="text" defaultValue={editingItem?.theme || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Ayat</label><input required name="verse" type="text" defaultValue={editingItem?.verse || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                      <div className="flex gap-2">
+                        <button className="flex-1 bg-amber-500 text-white py-3 rounded-lg font-semibold hover:bg-amber-600 flex items-center justify-center gap-2 mt-2"><Icon name="plus" className="w-5 h-5"/> Simpan</button>
+                        {editingItem && <button type="button" onClick={resetForm} className="bg-gray-200 px-4 rounded-lg">Batal</button>}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-100 text-gray-700 text-sm"><tr><th className="p-4">Keterangan</th><th className="p-4 text-right">Aksi</th></tr></thead>
+                    <tbody>
+                      {schedules.map(s => <tr key={s.id} className="border-t text-sm hover:bg-gray-50"><td className="p-4 font-medium text-gray-800">{s.group} <span className="text-xs text-gray-400">({s.type})</span></td><td className="p-4 text-right flex gap-1 justify-end"><EditBtn onClick={() => setEditingItem(s)} /><DeleteBtn onClick={() => { if (window.confirm('Hapus jadwal ini?')) updateData('schedules', schedules.filter(x => x.id !== s.id)); }} /></td></tr>)}
+                      {schedules.length === 0 && <tr><td colSpan="2" className="p-8 text-center text-gray-400">Belum ada jadwal.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {view === 'mimbar' && (
+              <div>
+                <h1 className="text-2xl font-bold text-amber-600 mb-6">Manajemen Mimbar</h1>
+                <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 border-t-4 border-amber-500">
+                  <h3 className="text-lg font-bold text-amber-600 mb-4">{editingItem ? 'Edit Mimbar' : 'Tambah Mimbar'}</h3>
+                  <form onSubmit={submitMimbar} key={editingItem ? editingItem.id : 'new'} className="grid lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Kategori</label><select required name="cat" defaultValue={editingItem?.cat || "artikel"} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"><option value="artikel">Artikel</option><option value="khotbah">Khotbah</option><option value="renungan">Renungan</option><option value="puisi">Puisi</option><option value="umum">Umum</option></select></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Judul</label><input required name="title" type="text" defaultValue={editingItem?.title || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Penulis</label><input required name="author" type="text" defaultValue={editingItem?.author || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tanggal</label><input required name="date" type="text" defaultValue={editingItem?.date || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" /></div>
+                    </div>
+                    <div className="space-y-4">
+                      <FileUploader label="Upload Gambar/Poster" onUpload={(url) => document.getElementById('mimbar-img').value = url} />
+                      <input id="mimbar-img" name="imageUrl" type="hidden" defaultValue={editingItem?.imageUrl || ""} />
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Kutipan</label><textarea required name="excerpt" rows="6" defaultValue={editingItem?.excerpt || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"></textarea></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Status</label><select name="status" defaultValue={editingItem?.status || "Published"} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"><option value="Published">Published</option><option value="Draft">Draft</option></select></div>
+                      <div className="flex gap-2">
+                        <button className="flex-1 bg-amber-500 text-white py-3 rounded-lg font-semibold hover:bg-amber-600 flex items-center justify-center gap-2"><Icon name="save" className="w-5 h-5"/> Publikasi</button>
+                        {editingItem && <button type="button" onClick={resetForm} className="bg-gray-200 px-4 rounded-lg">Batal</button>}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-100 text-gray-700 text-sm"><tr><th className="p-4">Judul</th><th className="p-4">Kategori</th><th className="p-4 text-right">Aksi</th></tr></thead>
+                    <tbody>
+                      {mimbarItems.map(m => <tr key={m.id} className="border-t text-sm hover:bg-gray-50"><td className="p-4 font-medium text-gray-800">{m.title}</td><td className="p-4 capitalize">{m.cat}</td><td className="p-4 text-right flex gap-1 justify-end"><EditBtn onClick={() => setEditingItem(m)} /><DeleteBtn onClick={() => { if (window.confirm('Hapus konten ini?')) updateData('mimbarItems', mimbarItems.filter(x => x.id !== m.id)); }} /></td></tr>)}
+                      {mimbarItems.length === 0 && <tr><td colSpan="3" className="p-8 text-center text-gray-400">Belum ada konten mimbar.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {view === 'media' && (
+              <div>
+                <h1 className="text-2xl font-bold text-pink-600 mb-6">Media & Dokumentasi</h1>
+                
+                <div className="bg-white p-8 rounded-2xl shadow-sm border-t-4 border-indigo-500 mb-8">
+                  <h3 className="text-lg font-bold text-indigo-600 mb-4">{editingItem ? 'Edit Album' : 'Tambah Album Baru'}</h3>
+                  <form onSubmit={submitAlbum} key={editingItem ? editingItem.id : 'new'} className="grid lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Nama Album</label><input required name="title" type="text" defaultValue={editingItem?.title || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Kategori (Ketik/Pilih)</label><input required name="cat" list="cat-list" defaultValue={editingItem?.cat || "Umum"} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tanggal</label><input required name="date" type="date" defaultValue={editingItem?.date ? new Date(editingItem.date).toISOString().substr(0, 10) : ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                    </div>
+                    <div className="space-y-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Lokasi</label><input name="location" type="text" defaultValue={editingItem?.location || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Deskripsi</label><textarea name="description" rows="3" defaultValue={editingItem?.description || ""} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea></div>
+                      <FileUploader label="Upload Cover Album" onUpload={(url) => document.getElementById('album-cover').value = url} />
+                      <input id="album-cover" name="cover" type="hidden" defaultValue={editingItem?.cover || ""} />
+                      <div className="flex gap-2">
+                        <button className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 flex items-center justify-center gap-2"><Icon name="save" className="w-5 h-5"/> Simpan Album</button>
+                        {editingItem && <button type="button" onClick={resetForm} className="bg-gray-200 px-4 rounded-lg">Batal</button>}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="bg-white p-8 rounded-2xl shadow-sm border-t-4 border-pink-500 mb-8">
+                  <h3 className="text-lg font-bold text-pink-600 mb-4">Upload Foto</h3>
+                  <form onSubmit={submitPhotos} className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Nama Album (Ketik/Pilih)</label><input required name="albumTitle" list="album-list" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Kategori (Ketik/Pilih)</label><input required name="cat" list="cat-list" defaultValue="Umum" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tanggal</label><input required name="date" type="date" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Lokasi</label><input name="location" type="text" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none" /></div>
+                    </div>
+                    <div className={`border-2 border-dashed rounded-lg p-10 text-center flex flex-col items-center justify-center transition-all ${dragActive ? 'drag-active' : 'border-gray-300 hover:border-pink-400'}`} onDrop={onDrop} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }} onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}>
+                      <Icon name="upload-cloud" className="w-12 h-12 mb-3 text-gray-400" />
+                      <h4 className="font-semibold text-gray-700 mb-1">Seret foto ke sini atau klik pilih file</h4>
+                      <p className="text-xs text-gray-400 mb-4">Maksimal 10MB per file. Akan dikompresi otomatis.</p>
+                      <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleDragFiles(e.target.files)} />
+                      <button type="button" onClick={() => fileRef.current.click()} className="mt-4 bg-pink-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-pink-600 flex items-center gap-2"><Icon name="image-plus" className="w-4 h-4"/> Pilih File</button>
+                    </div>
+                    {pendingUploads.length > 0 && (
+                      <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                        {pendingUploads.map(p => <div key={p.id} className="relative h-24 rounded-md overflow-hidden border"><img src={p.url} className="w-full h-full object-cover" alt="preview" /><button type="button" onClick={() => setPendingUploads(prev => prev.filter(item => item.id !== p.id))} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1"><Icon name="x" className="w-3 h-3"/></button></div>)}
+                      </div>
+                    )}
+                    <button className="w-full bg-pink-600 text-white py-3 rounded-lg font-semibold hover:bg-pink-700 flex items-center justify-center gap-2" disabled={pendingUploads.length === 0}><Icon name="save" className="w-5 h-5"/> Simpan {pendingUploads.length} Foto</button>
+                  </form>
+                </div>
+
+                <div className="bg-white p-8 rounded-2xl shadow-sm border-t-4 border-rose-500">
+                  <h3 className="text-lg font-bold text-rose-600 mb-4">Tambah Video</h3>
+                  <div className="flex justify-center gap-2 flex-wrap mb-6">
+                    <button type="button" onClick={() => setVideoMode('upload')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${videoMode === 'upload' ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Upload dari HP/Laptop</button>
+                    <button type="button" onClick={() => setVideoMode('link')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${videoMode === 'link' ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Link YouTube</button>
+                  </div>
+                  <form onSubmit={submitVideo} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Judul</label><input required name="title" type="text" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Nama Album</label><input required name="albumTitle" list="album-list" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Kategori</label><input required name="cat" list="cat-list" defaultValue="Umum" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none" /></div>
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">Tanggal</label><input required name="date" type="date" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none" /></div>
+                    </div>
+                    {videoMode === 'upload' ? (
+                      <FileUploader label="Upload Video (MP4, WebM - Maks 100MB)" accept="video/*" onUpload={(url) => document.getElementById('vid-file').value = url} />
+                    ) : (
+                      <div><label className="block text-xs font-medium text-gray-700 mb-1">URL Video YouTube</label><input name="url" type="text" placeholder="https://youtube.com/watch?v=..." className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none" /></div>
+                    )}
+                    <input id="vid-file" name="videoFile" type="hidden" />
+                    <FileUploader label="Upload Thumbnail (Opsional)" onUpload={(url) => document.getElementById('vid-thumb').value = url} />
+                    <input id="vid-thumb" name="thumbnail" type="hidden" />
+                    <button className="w-full bg-rose-600 text-white py-3 rounded-lg font-semibold hover:bg-rose-700 flex items-center justify-center gap-2"><Icon name="save" className="w-5 h-5"/> Simpan Video</button>
+                  </form>
+                </div>
+
+                <datalist id="album-list">{albums.map(al => <option key={al.id} value={al.title} />)}</datalist>
+                <datalist id="cat-list">{mediaCategories.map(c => <option key={c} value={c} />)}</datalist>
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    };
+
+    const LoginScreen = ({ navigate }) => {
+      const { login, siteSettings } = useApp();
+      const [error, setError] = useState('');
+      const handleLogin = (e) => { e.preventDefault(); const fd = new FormData(e.target); if (login(fd.get('username'), fd.get('password'))) { navigate('/admin'); } else { setError('Username atau Password salah!'); } };
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-skyLight dark:bg-gray-900">
+          <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md text-center border-t-8 border-sky">
+            <img src={siteSettings.logo} className="w-20 h-20 mx-auto mb-4 object-contain" alt="Logo GKI" />
+            <h2 className="text-2xl font-bold text-sky mb-2">Login Sistem</h2>
+            <p className="text-gray-500 mb-6 text-sm">Jemaat Eden Mansoben</p>
+            <form onSubmit={handleLogin} className="space-y-4 text-left">
+              <input type="text" name="username" required placeholder="Username" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" />
+              <input type="password" name="password" required placeholder="Password" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky focus:outline-none" />
+              {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm text-center">{error}</div>}
+              <button type="submit" className="w-full bg-sky text-white py-3 rounded-lg font-semibold hover:bg-sky/90">MASUK</button>
+            </form>
+            <button onClick={() => navigate('/')} className="mt-4 text-sm text-gray-500 hover:text-sky">← Kembali ke Beranda</button>
+          </div>
+        </div>
+      );
+    };
+
+    const Footer = ({ navigate }) => {
+      const { siteSettings } = useApp();
+      const waLink = `https://wa.me/${siteSettings.whatsapp}?text=${encodeURIComponent("Shalom, saya ingin bertanya seputar informasi jemaat Eden Mansoben.")}`;
+      return (
+        <footer className="bg-primary text-white pt-16 pb-8">
+          <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <img src={siteSettings.logo} className="h-12 w-12 object-contain bg-white rounded-full p-1" alt="Logo GKI" />
+                <h4 className="font-bold text-lg">{siteSettings.namaGereja}</h4>
+              </div>
+              <p className="text-sm text-gray-300">{siteSettings.klasis}</p>
+            </div>
+            <div>
+              <h4 className="font-bold text-gold mb-4 uppercase text-sm">Menu</h4>
+              <ul className="space-y-2 text-gray-300 text-sm">
+                <li><button onClick={() => navigate('/')} className="hover:text-white">Beranda</button></li>
+                <li><button onClick={() => navigate('/berita')} className="hover:text-white">Berita</button></li>
+                <li><button onClick={() => navigate('/media/foto')} className="hover:text-white">Galeri Foto</button></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-gold mb-4 uppercase text-sm">Informasi</h4>
+              <ul className="space-y-2 text-gray-300 text-sm">
+                <li><button onClick={() => navigate('/jadwal')} className="hover:text-white">Jadwal Ibadah</button></li>
+                <li><button onClick={() => navigate('/tentang')} className="hover:text-white">Tentang Kami</button></li>
+                <li><button onClick={() => navigate('/kontak')} className="hover:text-white">Kontak</button></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-gold mb-4 uppercase text-sm">Kontak</h4>
+              <p className="text-sm text-gray-300 mb-2">{siteSettings.alamat}</p>
+              <div className="flex gap-4 mt-2">
+                <a href={waLink} target="_blank" rel="noopener noreferrer" className="hover:text-gold cursor-pointer"><Icon name="message-circle" className="w-5 h-5 text-gray-300 hover:text-gold"/></a>
+                <Icon name="facebook" className="w-5 h-5 text-gray-300 hover:text-gold cursor-pointer"/>
+                <Icon name="youtube" className="w-5 h-5 text-gray-300 hover:text-gold cursor-pointer"/>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-white/20 pt-8 text-center text-sm text-gray-400">© {new Date().getFullYear()} {siteSettings.namaGereja} — {siteSettings.organisasi}. All rights reserved.</div>
+        </footer>
+      );
+    };
+
+    const App = () => {
+      const [route, setRoute] = useState(window.location.hash.slice(1) || '/');
+      const { siteSettings } = useApp();
+
+      useEffect(() => {
+        const onHashChange = () => setRoute(window.location.hash.slice(1) || '/');
+        window.addEventListener('hashchange', onHashChange);
+        lucide.createIcons();
+        return () => window.removeEventListener('hashchange', onHashChange);
+      }, []);
+
+      useEffect(() => { lucide.createIcons(); }, [route]);
+
+      useEffect(() => {
+        document.title = `${siteSettings.namaGereja} | GKI di Tanah Papua`;
+      }, [siteSettings]);
+
+      const navigate = (path) => { window.location.hash = path; setRoute(path); window.scrollTo(0, 0); };
+
+      const mimbarMatch = route.match(/^\/mimbar\/(.*)$/);
+      const mimbarCategory = mimbarMatch ? mimbarMatch[1] : null;
+      const isMediaRoute = route.includes('/media');
+      const mediaView = route.includes('/media/') ? route.split('/').pop() : 'all';
+
+      if (route === '/admin' || route === '/login') {
+        return route === '/admin' ? <AdminDashboard navigate={navigate} /> : <LoginScreen navigate={navigate} />;
+      }
+
+      return (
+        <>
+          <Navbar navigate={navigate} />
+          {route === '/' && (
+            <>
+              <Hero navigate={navigate} />
+              <div className="container mx-auto px-4 py-16">
+                <h2 className="text-3xl font-bold text-primary dark:text-white text-center mb-12">Sambutan & Berita Terkini</h2>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <NewsPage />
+                </div>
+              </div>
+            </>
+          )}
+          {route === '/tentang' && <AboutPage />}
+          {route === '/jadwal' && <SchedulePage />}
+          {route === '/khotbah' && <SermonPage />}
+          {route === '/berita' && <NewsPage />}
+          {mimbarCategory && <MimbarPage navigate={navigate} category={mimbarCategory} />}
+          {isMediaRoute && <MediaPage navigate={navigate} initialView={mediaView === 'media' ? 'all' : mediaView} />}
+          {route === '/kontak' && <ContactPage />}
+          {route !== '/' && !['/tentang', '/jadwal', '/khotbah', '/berita', '/kontak'].includes(route) && !mimbarCategory && !isMediaRoute && (
+            <div className="min-h-[50vh] flex flex-col items-center justify-center text-gray-500">
+              <Icon name="alert-triangle" className="w-16 h-16 mb-4 text-amber-500" />
+              <h2 className="text-2xl font-bold mb-2">404 - Halaman Tidak Ditemukan</h2>
+              <button onClick={() => navigate('/')} className="mt-4 text-sky hover:underline">Kembali ke Beranda</button>
+            </div>
+          )}
+          <Footer navigate={navigate} />
+        </>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AppProvider><App /></AppProvider>);
+  </script>
+</body>
+</html>
